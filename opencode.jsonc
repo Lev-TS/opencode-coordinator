@@ -3,13 +3,70 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest"],
-      "enabled": true
+      "enabled": true,
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@0.0.79",
+        "--cdp-endpoint=chrome",
+        "--output-max-size=10485760",
+      ],
     },
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
-      "enabled": true
-    }
-  }
+      "enabled": true,
+      "command": [
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@1.8.0",
+        "--autoConnect",
+        "--no-usage-statistics",
+        "--no-performance-crux",
+      ],
+    },
+  },
+  "agent": {
+    "build": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "plan": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "general": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "explore": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "compaction": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "title": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+    "summary": {
+      "permission": {
+        "playwright_*": "deny",
+        "chrome-devtools_*": "deny",
+      },
+    },
+  },
 }
