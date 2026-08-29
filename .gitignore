@@ -2,3 +2,14 @@ node_modules
 bun.lock
 .playwright-mcp
 memory
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Private credential files
+*.pem
+*.key
+*.p12
+*.pfx
