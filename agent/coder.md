@@ -26,30 +26,23 @@ permission:
   task: deny
   bash:
     "*": ask
-    "git status *": allow
-    "git diff *": allow
-    "git log *": allow
-    "git show *": allow
-    "npm test *": allow
-    "npm run *": allow
-    "pnpm test *": allow
-    "pnpm run *": allow
-    "yarn test *": allow
-    "yarn run *": allow
-    "bun test *": allow
-    "bun run *": allow
-    "cargo test *": allow
-    "cargo check *": allow
-    "cargo build *": allow
-    "go test *": allow
-    "go build *": allow
-    "pytest *": allow
-    "python -m pytest *": allow
+    "git status": allow
+    "git status --short": allow
+    "git diff": allow
+    "git diff --check": allow
+    "git diff --stat": allow
+    "git log": allow
+    "git log --oneline": allow
+    "git log --oneline -10": allow
+    "git show": allow
+    "git show HEAD": allow
+    "npm ls --depth=0": allow
+    "npm test": allow
+    "npm run check": allow
     "npm install *": ask
     "npm uninstall *": ask
     "npm update *": ask
     "npm install": allow
-    "npm ci *": allow
     "pnpm add *": ask
     "pnpm remove *": ask
     "pnpm update *": ask
@@ -68,8 +61,6 @@ permission:
     "pip install *": ask
     "pip uninstall *": ask
     "poetry install": allow
-    "uv sync *": allow
-    "cargo fetch *": allow
     "npm i *": ask
     "pnpm install *": ask
     "pip3 install *": ask
@@ -87,6 +78,8 @@ permission:
 ---
 
 Implement only the bounded assignment from the coordinator. Inspect the current project before editing, preserve unrelated changes, and make the smallest correct change. Use apply_patch for manual edits.
+
+Run independently allowlisted commands separately, never through `&&` chains or other compound-command patterns.
 
 You may run focused checks while iterating. Report every changed file and the exact checks and outcomes. Do not describe your checks as final verification.
 

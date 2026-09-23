@@ -428,10 +428,11 @@ async function connectVault(root: string, source: CloneSource) {
 }
 
 async function sourceMatches(root: string, kind: string, identity: string) {
+  const canonicalRoot = await realpath(root)
   const marker = `source_identity: ${kind}:${identity}`
   const matches: string[] = []
-  for (const file of await markdownFiles(root)) {
-    if ((await readFile(file, "utf8")).includes(marker)) matches.push(relative(root, file).replaceAll(sep, "/"))
+  for (const file of await markdownFiles(canonicalRoot)) {
+    if ((await readFile(file, "utf8")).includes(marker)) matches.push(relative(canonicalRoot, file).replaceAll(sep, "/"))
   }
   return { marker, matches }
 }
@@ -496,29 +497,30 @@ async function lintMemory(root: string, scope: string, all: boolean, fix: boolea
   if (dirtyBefore.length > 0) throw new Error(`Memory vault has uncommitted changes: ${dirtyBefore.join(", ")}`)
 
   if (!all && !scope) throw new Error("Scoped memory lint requires the current project namespace; use all=true for the entire vault")
+  const canonicalRoot = await realpath(root)
   const selected = all ? "" : scope
-  const files = await markdownFiles(root, selected)
+  const files = await markdownFiles(canonicalRoot, selected)
   const brokenLinks: Array<{ file: string; target: string }> = []
   const malformedMetadata: string[] = []
   const semanticFlags: Array<{ file: string; labels: string[] }> = []
   for (const absolute of files) {
-    const path = relative(root, absolute).replaceAll(sep, "/")
+    const path = relative(canonicalRoot, absolute).replaceAll(sep, "/")
     const content = await readFile(absolute, "utf8")
     if (!content.startsWith("---\n") || !/^---\n[\s\S]*?\n---\n/.test(content)) malformedMetadata.push(path)
     const labels = CLAIM_LABELS.filter((label) => new RegExp(`\\b${label}\\b`, "i").test(content))
     if (labels.includes("contradiction") || labels.includes("unknown")) semanticFlags.push({ file: path, labels })
     for (const match of content.matchAll(/\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|[^\]]+)?\]\]/g)) {
       const raw = match[1].trim()
-      const candidates = [resolve(root, raw.endsWith(".md") ? raw : `${raw}.md`), resolve(dirname(absolute), raw.endsWith(".md") ? raw : `${raw}.md`)]
+      const candidates = [resolve(canonicalRoot, raw.endsWith(".md") ? raw : `${raw}.md`), resolve(dirname(absolute), raw.endsWith(".md") ? raw : `${raw}.md`)]
       if (!(await Promise.any(candidates.map(async (candidate) => ((await exists(candidate)) ? candidate : Promise.reject()))).catch(() => undefined))) {
         brokenLinks.push({ file: path, target: raw })
       }
     }
   }
 
-  const index = await readFile(join(root, "index.md"), "utf8")
+  const index = await readFile(join(canonicalRoot, "index.md"), "utf8")
   const uncataloged = files
-    .map((file) => relative(root, file).replaceAll(sep, "/"))
+    .map((file) => relative(canonicalRoot, file).replaceAll(sep, "/"))
     .filter((file) => file !== "index.md" && file !== "log.md" && !index.includes(file.replace(/\.md$/, "")) && !index.includes(file))
 
   const changedPaths: string[] = []
@@ -541,7 +543,7 @@ async function lintMemory(root: string, scope: string, all: boolean, fix: boolea
     }
     const repairedIndex = repaired.join("\n")
     if (repairedIndex !== index) {
-      await writeFile(join(root, "index.md"), repairedIndex)
+      await writeFile(join(canonicalRoot, "index.md"), repairedIndex)
       changedPaths.push("index.md")
     }
   }

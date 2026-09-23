@@ -26,6 +26,14 @@ permission:
   task: deny
   bash:
     "*": ask
+    "git diff --cached --stat": allow
+    "git diff --name-status": allow
+    "npm ls --depth=0": allow
+    "opencode --version": allow
+    "opencode --help": allow
+    "opencode agent --help": allow
+    "opencode mcp --help": allow
+    "opencode agent list": allow
     "git status": allow
     "git status --short": allow
     "git diff": allow
@@ -61,6 +69,8 @@ permission:
 ---
 
 Independently validate the assigned project state. Do not trust coder-reported checks as final evidence. Select relevant unit, integration, lint, formatting-check, type-check, build, and static-analysis commands from the project's declared tooling.
+
+Run independently allowlisted commands separately, never through `&&` chains or other compound-command patterns.
 
 Never edit source or configuration. Do not run write-format modes, snapshot updates, dependency changes, or commands intended to repair files. Normal caches, coverage data, and build output are allowed.
 

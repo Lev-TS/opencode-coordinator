@@ -65,6 +65,8 @@ test("resolved OpenCode configuration discovers the coordinator system", () => {
 test("resolved permissions keep role boundaries", () => {
   const inspect = (agent: string) => JSON.parse(execFileSync("opencode", ["debug", "agent", agent], { encoding: "utf8" }))
   const coordinator = inspect("coordinator")
+  const build = inspect("build")
+  const plan = inspect("plan")
   const archivist = inspect("archivist")
   const inspector = inspect("inspector")
   const researcher = inspect("researcher")
@@ -73,6 +75,12 @@ test("resolved permissions keep role boundaries", () => {
   assert.equal(coordinator.tools.task, true)
   assert.equal(coordinator.tools.memory_read, false)
   assert.equal(coordinator.tools.ingest_hash_file, true)
+  for (const agent of [build, plan]) {
+    assert.equal(agent.tools.skill, true)
+    assert.equal(agent.tools.memory_read, false)
+    assert.equal(agent.tools.ingest_hash_file, false)
+    assert.match(agent.prompt, /invoke and apply the `unslop` skill/)
+  }
   assert.equal(archivist.tools.bash, false)
   assert.equal(archivist.tools.read, false)
   assert.equal(archivist.tools.memory_read, true)
@@ -89,6 +97,14 @@ test("resolved permissions keep role boundaries", () => {
   assert.ok(inspect("coder").permission.some((rule: { permission: string; pattern: string; action: string }) => rule.permission === "bash" && rule.pattern === "npm i *" && rule.action === "ask"))
   assert.ok(archivist.permission.some((rule: { permission: string; action: string }) => rule.permission === "memory_initialize" && rule.action === "ask"))
   assert.ok(coordinator.permission.some((rule: { permission: string; action: string }) => rule.permission === "ingest_clone_repository" && rule.action === "ask"))
+  for (const agent of [build, plan]) {
+    for (const worker of ["archivist", "coder", "inspector", "researcher", "reviewer", "verifier"]) {
+      assert.ok(agent.permission.some((rule: { permission: string; pattern: string; action: string }) => rule.permission === "task" && rule.pattern === worker && rule.action === "deny"))
+    }
+  }
+  for (const agent of [coordinator, inspect("coder"), inspect("verifier")]) {
+    assert.ok(agent.permission.filter((rule: { permission: string; action: string }) => rule.permission === "bash" && rule.action === "allow").every((rule: { pattern: string }) => !rule.pattern.includes("*")))
+  }
 })
 
 test("model and variant overrides apply only when non-empty", async () => {
@@ -292,8 +308,10 @@ test("connection accepts an empty destination and rejects symlinked vault schema
   assert.equal(parsed(await destination.call("memory_connect", { source: sourceFixture.vault })).root, destinationFixture.vault)
 
   execFileSync("git", ["clone", "--no-hardlinks", sourceFixture.vault, unsafeFixture.vault], { stdio: "ignore" })
+  const externalIndex = join(unsafeFixture.parent, "external-index.md")
+  await writeFile(externalIndex, "external fixture")
   await rm(join(unsafeFixture.vault, "index.md"))
-  await symlink("/etc/passwd", join(unsafeFixture.vault, "index.md"))
+  await symlink(externalIndex, join(unsafeFixture.vault, "index.md"))
   execFileSync("git", ["add", "index.md"], { cwd: unsafeFixture.vault })
   execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@localhost", "commit", "-m", "unsafe schema"], { cwd: unsafeFixture.vault })
   const blockedFixture = await temporaryVault()
@@ -321,6 +339,26 @@ test("lint records semantic flags, removes stale index links, and commits", asyn
   assert.deepEqual(lint.repaired, ["index.md"])
   assert.doesNotMatch(await readFile(join(vault, "index.md"), "utf8"), /missing\.md/)
   assert.match(lint.commit, /^[0-9a-f]{40,64}$/)
+})
+
+test("source status and lint canonicalize a logical vault path", async (t) => {
+  const { parent, vault } = await temporaryVault()
+  t.after(() => rm(parent, { recursive: true, force: true }))
+  const logicalVault = join(parent, "logical-memory")
+  const physical = await harness(vault)
+  await physical.call("memory_initialize")
+  await physical.call("memory_update", {
+    operation: "ingest",
+    summary: "add logical path fixture",
+    source: { kind: "sha256", identity: "logical-path", provenance: "test fixture", coverage: "complete" },
+    changes: [{ path: "shared/logical-source.md", content: "---\ntype: source\nupdated: 2026-08-29\nsources: []\n---\n\nsource_identity: sha256:logical-path\n\ncontradiction: logical and physical paths differ.\n", mode: "replace" }],
+  })
+  await symlink(vault, logicalVault)
+  const logical = await harness(logicalVault)
+
+  assert.deepEqual(parsed(await logical.call("memory_source_status", { kind: "sha256", identity: "logical-path" })).pages, ["shared/logical-source.md"])
+  const lint = parsed(await logical.call("memory_lint", { all: true, scope: "", fix: false }))
+  assert.ok(lint.semanticFlags.some((entry: { file: string }) => entry.file === "shared/logical-source.md"))
 })
 
 test("commit failure preserves dirty files and reports Git evidence", async (t) => {

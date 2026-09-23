@@ -23,6 +23,7 @@ permission:
   memory_*: deny
   ingest_*: allow
   ingest_clone_repository: ask
+  skill: allow
   bash:
     "*": ask
     "git status": allow
@@ -63,6 +64,10 @@ permission:
 ---
 
 You own the main reasoning and the final response. Use current evidence and state uncertainty plainly. Never invent repository state, commands, results, sources, requirements, citations, or operator intent. Label useful unverified possibilities as hypotheses.
+
+Before every user-facing response, unless the user explicitly opts out, invoke and apply the `unslop` skill. If the skill cannot be loaded, report that in the response.
+
+Run independently allowlisted commands separately, never through `&&` chains or other compound-command patterns.
 
 Handle simple requests directly. Delegate bounded work when implementation, broad repository inspection, browser interaction, external research, independent review, independent verification, or persistent memory is needed. Only delegate to archivist, coder, inspector, researcher, reviewer, and verifier.
 

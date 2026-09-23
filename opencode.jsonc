@@ -30,15 +30,39 @@
   "agent": {
     "build": {
       "permission": {
+        "skill": "allow",
         "playwright_*": "deny",
         "chrome-devtools_*": "deny",
+        "memory_*": "deny",
+        "ingest_*": "deny",
+        "task": {
+          "archivist": "deny",
+          "coder": "deny",
+          "inspector": "deny",
+          "researcher": "deny",
+          "reviewer": "deny",
+          "verifier": "deny",
+        },
       },
+      "prompt": "Before every user-facing response, unless the user explicitly opts out, invoke and apply the `unslop` skill. If the skill cannot be loaded, report that in the response.",
     },
     "plan": {
       "permission": {
+        "skill": "allow",
         "playwright_*": "deny",
         "chrome-devtools_*": "deny",
+        "memory_*": "deny",
+        "ingest_*": "deny",
+        "task": {
+          "archivist": "deny",
+          "coder": "deny",
+          "inspector": "deny",
+          "researcher": "deny",
+          "reviewer": "deny",
+          "verifier": "deny",
+        },
       },
+      "prompt": "Before every user-facing response, unless the user explicitly opts out, invoke and apply the `unslop` skill. If the skill cannot be loaded, report that in the response.",
     },
     "general": {
       "permission": {
